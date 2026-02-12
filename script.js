@@ -84,24 +84,29 @@ const contactForm = document.getElementById('contactForm');
 
 if (contactForm) {
     contactForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(contactForm);
-    
-    try {
-        const response = await fetch('https://formspree.io/f/mzdaeenj', {
-            method: 'POST',
-            body: formData,
-            headers: { 'Accept': 'application/json' }
-        });
+        e.preventDefault();
+        const formData = new FormData(contactForm);
         
-        if (response.ok) {
-            showNotification('Thank you! We will contact you soon.', 'success');
-            contactForm.reset();
+        try {
+            const response = await fetch('https://formspree.io/f/mzdaeenj', {
+                method: 'POST',
+                body: formData,
+                headers: { 
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                showNotification('Thank you! We will contact you soon.', 'success');
+                contactForm.reset();
+            } else {
+                showNotification('Error sending message. Please try again.', 'error');
+            }
+        } catch (error) {
+            showNotification('Error sending message. Please try again.', 'error');
         }
-    } catch (error) {
-        showNotification('Error sending message. Please try again.', 'error');
-    }
-})};
+    });
+}
 
 // Notification System
 function showNotification(message, type = 'info') {
