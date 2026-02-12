@@ -57,30 +57,51 @@ window.addEventListener('scroll', () => {
 // Contact Form Handling
 const contactForm = document.getElementById('contactForm');
 
+// if (contactForm) {
+//     contactForm.addEventListener('submit', function(e) {
+//         e.preventDefault();
+        
+//         // Get form data
+//         const formData = new FormData(contactForm);
+//         const data = Object.fromEntries(formData);
+        
+//         // Show success message (in production, this would send to a server)
+//         showNotification('Thank you for your inquiry! We will get back to you within 24 hours.', 'success');
+        
+//         // Reset form
+//         contactForm.reset();
+        
+//         // In production, you would send this data to your backend:
+//         // fetch('/api/contact', {
+//         //     method: 'POST',
+//         //     headers: { 'Content-Type': 'application/json' },
+//         //     body: JSON.stringify(data)
+//         // });
+        
+//         console.log('Form submitted:', data);
+//     });
+// }
+
 if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    contactForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(contactForm);
+    
+    try {
+        const response = await fetch('https://formspree.io/f/mzdaeenj', {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        });
         
-        // Get form data
-        const formData = new FormData(contactForm);
-        const data = Object.fromEntries(formData);
-        
-        // Show success message (in production, this would send to a server)
-        showNotification('Thank you for your inquiry! We will get back to you within 24 hours.', 'success');
-        
-        // Reset form
-        contactForm.reset();
-        
-        // In production, you would send this data to your backend:
-        // fetch('/api/contact', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(data)
-        // });
-        
-        console.log('Form submitted:', data);
-    });
-}
+        if (response.ok) {
+            showNotification('Thank you! We will contact you soon.', 'success');
+            contactForm.reset();
+        }
+    } catch (error) {
+        showNotification('Error sending message. Please try again.', 'error');
+    }
+})};
 
 // Notification System
 function showNotification(message, type = 'info') {
