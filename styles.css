@@ -359,6 +359,86 @@ section {
     margin-top: 3rem;
 }
 
+/* ===================================
+   Testimonials Section
+   =================================== */
+
+.testimonials {
+    background: var(--bg-light);
+}
+
+.testimonials-grid {
+    position: relative;
+    overflow: hidden;
+    display: block; /* we'll position cards absolutely inside */
+    margin-top: 3rem;
+    height: 320px; /* set a fixed height to avoid jumpy layout */
+}
+
+.testimonial-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.testimonial-card.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* ensure cards still have spacing inside */
+.testimonial-card {
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.testimonial-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.testimonial-card img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    border: 2px solid var(--primary-color);
+}
+
+.testimonial-card .review {
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.testimonial-card .customer-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.testimonial-card .rating {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+/* ===================================
+   Why Choose Section
+   =================================== */
+
 .service-card {
     background: white;
     padding: 2.5rem;

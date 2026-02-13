@@ -349,3 +349,64 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.opacity = '1';
     }, 100);
 });
+
+// ================================
+// Testimonials configuration
+// ================================
+
+// You can reconfigure names, reviews, ratings (1-5), and images below.
+const testimonials = [
+    {
+        name: 'Ananya Roy',
+        review: 'Working with Mukh Interiors was a dream. They understood my style instantly and transformed my living room into a warm, inviting space.',
+        rating: 5,
+        image: 'https://randomuser.me/api/portraits/women/68.jpg'
+    },
+    {
+        name: 'Rohan Singh',
+        review: 'The attention to detail and professionalism was outstanding. Highly recommend for anyone needing a modern makeover.',
+        rating: 4,
+        image: 'https://randomuser.me/api/portraits/men/45.jpg'
+    },
+    {
+        name: 'Priya Mehta',
+        review: 'From concept boards to final execution, every step was seamless. My kitchen has never looked better.',
+        rating: 5,
+        image: 'https://randomuser.me/api/portraits/women/12.jpg'
+    }
+];
+
+function renderTestimonials() {
+    const grid = document.getElementById('testimonialGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    testimonials.forEach((t, idx) => {
+        const card = document.createElement('div');
+        card.className = 'testimonial-card';
+        card.dataset.index = idx;
+        card.innerHTML = `
+            <img src="${t.image}" alt="${t.name}">
+            <p class="review">"${t.review}"</p>
+            <p class="customer-name">${t.name}</p>
+            <p class="rating">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</p>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function startTestimonialCarousel() {
+    const cards = document.querySelectorAll('.testimonial-card');
+    if (cards.length === 0) return;
+    let current = 0;
+    cards[current].classList.add('active');
+    setInterval(() => {
+        cards[current].classList.remove('active');
+        current = (current + 1) % cards.length;
+        cards[current].classList.add('active');
+    }, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderTestimonials();
+    startTestimonialCarousel();
+});
