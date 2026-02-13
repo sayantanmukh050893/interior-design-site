@@ -367,12 +367,6 @@ const testimonials = [
         review: 'The attention to detail and professionalism was outstanding. Highly recommend for anyone needing a modern makeover.',
         rating: 4,
         image: 'https://randomuser.me/api/portraits/men/45.jpg'
-    },
-    {
-        name: 'Priya Mehta',
-        review: 'From concept boards to final execution, every step was seamless. My kitchen has never looked better.',
-        rating: 5,
-        image: 'https://randomuser.me/api/portraits/women/12.jpg'
     }
 ];
 
@@ -407,6 +401,9 @@ function startTestimonialCarousel() {
     }
 
     updatePositions();
+
+    // recalc positions when the window width changes so cards stay aligned
+    window.addEventListener('resize', updatePositions);
 
     setInterval(() => {
         current = (current + 1) % cards.length;
