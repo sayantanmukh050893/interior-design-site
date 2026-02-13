@@ -398,14 +398,24 @@ function startTestimonialCarousel() {
     const cards = document.querySelectorAll('.testimonial-card');
     if (cards.length === 0) return;
     let current = 0;
-    cards[current].classList.add('active');
+
+    // position cards in a row and set initial transform
+    function updatePositions() {
+        cards.forEach((card, i) => {
+            card.style.transform = `translateX(${(i - current) * 100}%)`;
+        });
+    }
+
+    updatePositions();
+
     setInterval(() => {
-        cards[current].classList.remove('active');
         current = (current + 1) % cards.length;
-        cards[current].classList.add('active');
+        updatePositions();
     }, 5000);
 }
 
+// ensure testimonials render and carousel starts after DOM is ready
+// (this listener is separate from the earlier one that handles page load logging)
 document.addEventListener('DOMContentLoaded', () => {
     renderTestimonials();
     startTestimonialCarousel();

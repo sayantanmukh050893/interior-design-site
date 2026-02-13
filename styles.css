@@ -368,45 +368,30 @@ section {
 }
 
 .testimonials-grid {
-    position: relative;
     overflow: hidden;
-    display: block; /* we'll position cards absolutely inside */
-    margin-top: 3rem;
-    height: 320px; /* set a fixed height to avoid jumpy layout */
-}
-
-.testimonial-card {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-}
-
-.testimonial-card.active {
     display: flex;
-    opacity: 1;
+    margin-top: 3rem;
+    /* allow height to grow based on content or fix if needed */
+    height: 320px; /* keep same height for consistency */
 }
 
-/* ensure cards still have spacing inside */
+/* each card takes full width of container */
 .testimonial-card {
+    flex: 0 0 100%;
     justify-content: center;
     align-items: center;
     flex-direction: column;
-}
-
-.testimonial-card {
     background: white;
     padding: 2rem;
     border-radius: 8px;
     box-shadow: var(--shadow);
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
+    transition: transform 0.5s ease;
+}
+
+/* remove old visibility rules */
+.testimonial-card.active {
+    /* no additional styles required; kept for compatibility if used elsewhere */
 }
 
 .testimonial-card img {
