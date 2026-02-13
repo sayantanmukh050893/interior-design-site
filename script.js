@@ -389,14 +389,16 @@ function renderTestimonials() {
 }
 
 function startTestimonialCarousel() {
+    const grid = document.getElementById('testimonialGrid');
     const cards = document.querySelectorAll('.testimonial-card');
-    if (cards.length === 0) return;
+    if (!grid || cards.length === 0) return;
     let current = 0;
 
-    // position cards in a row and set initial transform
+    // position cards in a row using the container's width for precise alignment
     function updatePositions() {
+        const width = grid.clientWidth;
         cards.forEach((card, i) => {
-            card.style.transform = `translateX(${(i - current) * 100}%)`;
+            card.style.transform = `translateX(${(i - current) * width}px)`;
         });
     }
 
