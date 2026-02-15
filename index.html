@@ -29,6 +29,7 @@
                 <li><a href="#why-choose">Why Us</a></li>
                 <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#blog">Insights</a></li>
+                <li><a href="#know-better">Design Brief</a></li>
                 <li><a href="#contact" class="cta-nav">Contact</a></li>
             </ul>
         </div>
@@ -353,6 +354,87 @@
                         <span class="blog-date">Coming Soon</span>
                     </div>
                 </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Let's Know You Better Section -->
+    <section id="know-better" class="know-better">
+        <div class="container">
+            <div class="section-header centered">
+                <span class="section-tag">Get Started</span>
+                <h2>Let's Know You Better</h2>
+                <p class="section-desc">Help us understand your style preferences and vision so we can create your perfect space</p>
+            </div>
+
+            <form class="know-better-form" id="knowBetterForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="kb-name">Your Name *</label>
+                        <input type="text" id="kb-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="kb-email">Email Address *</label>
+                        <input type="email" id="kb-email" name="email" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-about">Tell Us About Yourself *</label>
+                    <textarea id="kb-about" name="about" rows="4" placeholder="Share a bit about yourself, your lifestyle, and your aesthetic preferences..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-colors">Preferred Colours *</label>
+                    <textarea id="kb-colors" name="preferred_colors" rows="3" placeholder="e.g., Warm neutrals, deep blues, earth tones..." required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="kb-likes">What Do You Like? *</label>
+                        <textarea id="kb-likes" name="likes" rows="3" placeholder="e.g., Minimalism, plants, natural light, modern furniture..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="kb-dislikes">What Do You Dislike? *</label>
+                        <textarea id="kb-dislikes" name="dislikes" rows="3" placeholder="e.g., Bold colours, clutter, dark spaces..." required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-hobbies">Your Hobbies & Interests *</label>
+                    <textarea id="kb-hobbies" name="hobbies" rows="3" placeholder="e.g., Reading, yoga, cooking, art..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-requirements">Space Requirements *</label>
+                    <textarea id="kb-requirements" name="requirements" rows="4" placeholder="e.g., Need workspace, storage solutions, entertainment area..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-comments">Additional Comments</label>
+                    <textarea id="kb-comments" name="additional_comments" rows="3" placeholder="Anything else you'd like us to know..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="kb-image">Upload Room Image *</label>
+                    <div class="file-upload">
+                        <input type="file" id="kb-image" name="room_image" accept="image/*" required>
+                        <p class="file-help">Upload a photo of the room you want to transform (JPG, PNG, WebP)</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Generate Design Brief</button>
+                <p class="form-note">We'll create a personalized design brief based on your preferences</p>
+            </form>
+
+            <!-- Generated Prompt Display -->
+            <div id="promptResult" class="prompt-result" style="display: none;">
+                <div class="prompt-header">
+                    <h3>Your Personalized Design Brief</h3>
+                    <button class="close-prompt" aria-label="Close">×</button>
+                </div>
+                <div id="promptContent" class="prompt-content"></div>
+                <button class="btn btn-primary" id="copyPromptBtn">Copy to Clipboard</button>
             </div>
         </div>
     </section>

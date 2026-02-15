@@ -108,6 +108,283 @@ if (contactForm) {
     });
 }
 
+// Know Better Form Handler
+const knowBetterForm = document.getElementById('knowBetterForm');
+const API_BASE_URL = 'http://localhost:5000'; // Update this based on your deployment
+
+if (knowBetterForm) {
+    knowBetterForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Get form data
+        const formData = new FormData(knowBetterForm);
+        const clientData = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            about: formData.get('about'),
+            preferred_colors: formData.get('preferred_colors'),
+            likes: formData.get('likes'),
+            dislikes: formData.get('dislikes'),
+            hobbies: formData.get('hobbies'),
+            requirements: formData.get('requirements'),
+            additional_comments: formData.get('additional_comments')
+        };
+        
+        const roomImage = formData.get('room_image');
+        
+        if (!roomImage || roomImage.size === 0) {
+            showNotification('Please upload a room image', 'error');
+            return;
+        }
+        
+        try {
+            // Step 1: Generate prompt
+            showNotification('Generating your design brief...', 'info');
+            
+            const promptResponse = await fetch(`${API_BASE_URL}/generate-prompt`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(clientData)
+            });
+            
+            if (!promptResponse.ok) {
+                throw new Error('Failed to generate prompt');
+            }
+            
+            const promptData = await promptResponse.json();
+            displayPromptResult(promptData.prompt, clientData, roomImage, promptData.theme_info);
+            
+            showNotification('Design brief generated! Ready to transform your room.', 'success');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error generating design brief. Please try again.', 'error');
+        }
+    });
+}
+
+// Prompt Builder Function (local version for backup)
+function buildDesignerPrompt(data) {
+    return `You are a senior interior designer.
+
+Client Information:
+Name: ${data.name}
+About: ${data.about}
+
+Client Preferences:
+Colors: ${data.preferred_colors}
+Likes: ${data.likes}
+Dislikes: ${data.dislikes}
+Hobbies: ${data.hobbies}
+Requirements: ${data.requirements}
+
+Additional Comments: ${data.additional_comments || 'None'}
+
+Create:
+
+- Theme recommendation based on preferences
+- Mood board concept description
+- Specific design elements to incorporate
+- Design suggestions for their space transformation`;
+}
+
+// Display Prompt Result with Image Transformation
+function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
+    const promptResult = document.getElementById('promptResult');
+    const promptContent = document.getElementById('promptContent');
+    
+    // Convert uploaded image to base64
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const originalImageBase64 = e.target.result;
+        
+        promptContent.innerHTML = `
+            <div id="briefSection" style="margin-bottom: 2rem;">
+                <h4>Your Personalized Design Brief</h4>
+                <pre style="background: var(--bg-light); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.9rem;">${prompt}</pre>
+            </div>
+            
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+            
+            <div id="imageLikeSliderContainer" style="margin-top: 2rem;">
+                <h4 style="text-align: center; margin-bottom: 1.5rem;">AI Room Transformation Preview</h4>
+                
+                <div class="image-comparison-slider" id="imageComparisonSlider">
+                    <div class="img-wrapper-before">
+                        <img id="imageOriginal" src="${originalImageBase64}" alt="Original room">
+                        <span class="label label-before">Original</span>
+                    </div>
+                    <div class="img-wrapper-after">
+                        <img id="imageTransformed" src="${originalImageBase64}" alt="Transformed room">
+                        <span class="label label-after">Transformed</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider-handle" id="sliderHandle" aria-label="Comparison slider">
+                </div>
+                
+                <div id="generationProgress" style="display: none; margin-top: 2rem; text-align: center;">
+                    <p style="margin-bottom: 1rem;">Generating your transformation... This may take a few minutes.</p>
+                    <div style="width: 100%; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden;">
+                        <div style="width: 0%; height: 100%; background: #C9A86A; animation: pulse 2s infinite;"></div>
+                    </div>
+                </div>
+                
+                <div id="sliderButtonContainer" style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
+                    <button type="button" id="transformBtn" class="btn btn-primary">Generate Transformation</button>
+                    <button type="button" id="downloadComparison" class="btn btn-secondary" style="display: none;">Download Comparison</button>
+                </div>
+            </div>
+        `;
+        
+        promptResult.style.display = 'block';
+        
+        // Close button handler
+        const closeBtn = promptResult.querySelector('.close-prompt');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                promptResult.style.display = 'none';
+            });
+        }
+        
+        // Image comparison slider handler
+        const sliderHandle = document.getElementById('sliderHandle');
+        const imgWrapper = document.querySelector('.img-wrapper-after');
+        
+        if (sliderHandle) {
+            sliderHandle.addEventListener('input', function(e) {
+                const value = e.target.value;
+                imgWrapper.style.width = (100 - value) + '%';
+            });
+        }
+        
+        // Transform button handler
+        const transformBtn = document.getElementById('transformBtn');
+        transformBtn.addEventListener('click', async () => {
+            await transformRoomImage(roomImage, clientData, themeInfo, originalImageBase64);
+        });
+    };
+    reader.readAsDataURL(roomImage);
+}
+
+// Transform Room Image
+async function transformRoomImage(imageFile, clientData, themeInfo, originalImageBase64) {
+    try {
+        const transformBtn = document.getElementById('transformBtn');
+        const generationProgress = document.getElementById('generationProgress');
+        const imageTransformed = document.getElementById('imageTransformed');
+        const sliderHandle = document.getElementById('sliderHandle');
+        const downloadBtn = document.getElementById('downloadComparison');
+        
+        transformBtn.disabled = true;
+        generationProgress.style.display = 'block';
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('client_data', JSON.stringify(clientData));
+        formData.append('theme_info', JSON.stringify(themeInfo || {}));
+        
+        // Call transformation API
+        const response = await fetch(`${API_BASE_URL}/transform`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Transformation failed');
+        }
+        
+        const result = await response.json();
+        
+        // Update the transformed image in the slider
+        if (result.image_base64) {
+            imageTransformed.src = `data:image/png;base64,${result.image_base64}`;
+            
+            // Enable slider interaction
+            sliderHandle.disabled = false;
+            sliderHandle.style.opacity = '1';
+            sliderHandle.style.cursor = 'pointer';
+            
+            // Show download button
+            downloadBtn.style.display = 'inline-block';
+            
+            // Setup download functionality
+            downloadBtn.onclick = () => {
+                downloadComparisonImage(
+                    originalImageBase64.split(',')[1],
+                    result.image_base64,
+                    clientData.name
+                );
+            };
+            
+            showNotification('Your room has been transformed successfully! Drag the slider to compare.', 'success');
+        }
+        
+        generationProgress.style.display = 'none';
+        transformBtn.disabled = false;
+        transformBtn.textContent = 'Regenerate Transformation';
+        
+    } catch (error) {
+        console.error('Transformation Error:', error);
+        showNotification(`Error transforming room: ${error.message}`, 'error');
+        
+        const transformBtn = document.getElementById('transformBtn');
+        const generationProgress = document.getElementById('generationProgress');
+        
+        generationProgress.style.display = 'none';
+        transformBtn.disabled = false;
+    }
+}
+
+// Download comparison image
+function downloadComparisonImage(originalBase64, transformedBase64, clientName) {
+    try {
+        // Create canvas for side-by-side comparison
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Create images
+        const origImg = new Image();
+        const transImg = new Image();
+        
+        origImg.onload = function() {
+            transImg.onload = function() {
+                const width = origImg.width + transImg.width;
+                const height = Math.max(origImg.height, transImg.height);
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw images side by side
+                ctx.drawImage(origImg, 0, 0);
+                ctx.drawImage(transImg, origImg.width, 0);
+                
+                // Add labels
+                ctx.fillStyle = '#C9A86A';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText('Original', 10, 30);
+                ctx.fillText('Transformed', origImg.width + 10, 30);
+                
+                // Download
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${clientName}-room-transformation.png`;
+                link.click();
+                
+                showNotification('Comparison image downloaded!', 'success');
+            };
+            transImg.src = `data:image/png;base64,${transformedBase64}`;
+        };
+        origImg.src = `data:image/jpeg;base64,${originalBase64}`;
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        showNotification('Could not download comparison image', 'error');
+    }
+}
+
 // Notification System
 function showNotification(message, type = 'info') {
     // Remove existing notification if any
