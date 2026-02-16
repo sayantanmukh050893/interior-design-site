@@ -3,24 +3,32 @@ Flask API Server for Interior Design Image Transformation
 Provides endpoints for room transformation with AI
 """
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
 import logging
-from image_service import transformer, create_theme_from_design_brief
+from dotenv import load_dotenv
+from image_service_hf_api import get_transformer
 import json
 from io import BytesIO
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize transformer (uses Hugging Face API or mock based on HF_API_TOKEN)
+transformer = get_transformer()
+
 # Flask app setup
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 # Configuration
 UPLOAD_FOLDER = Path("uploads")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+REQUEST_TIMEOUT = 600  # 10 minutes for transformation
 
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
@@ -34,6 +42,22 @@ logger = logging.getLogger(__name__)
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/', methods=['GET'])
+def serve_index():
+    """Serve the main HTML page"""
+    return send_from_directory('.', 'index.html')
+
+
+@app.route('/<path:filename>', methods=['GET'])
+def serve_static(filename):
+    """Serve static files (CSS, JS, images, etc.)"""
+    static_files = ['styles.css', 'script.js', 'styles.css.map', 'script.js.map']
+    if filename in static_files or filename.startswith(('generated_images/', 'uploads/')):
+        return send_from_directory('.', filename)
+    # If file not found in static files, return 404
+    return jsonify({"status": "error", "message": "File not found"}), 404
 
 
 @app.route('/health', methods=['GET'])
@@ -279,5 +303,5 @@ if __name__ == '__main__':
     logger.info(f"Max file size: {MAX_FILE_SIZE / (1024*1024)}MB")
     
     # Note: For production, use gunicorn or similar WSGI server
-    # Example: gunicorn -w 1 -b 0.0.0.0:5000 app:app --timeout 300
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=False)
+    # Example: gunicorn -w 1 -b 0.0.0.0:5001 app:app --timeout 300
+    app.run(debug=False, host='0.0.0.0', port=5001, threaded=False)

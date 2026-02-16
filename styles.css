@@ -914,13 +914,40 @@ section {
     width: 100%;
 }
 
-/* Loading Animation */
+/* Loading Animations */
 @keyframes pulse {
     0%, 100% {
         width: 0%;
     }
     50% {
         width: 100%;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-reverse {
+    from {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+    to {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
     }
 }
 
@@ -939,12 +966,12 @@ section {
 .image-comparison-slider {
     position: relative;
     width: 100%;
-    max-width: 800px;
     margin: 0 auto;
     overflow: hidden;
     border-radius: 8px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
     user-select: none;
+    aspect-ratio: 16 / 9;
 }
 
 .img-wrapper-before,
@@ -961,7 +988,7 @@ section {
 .img-wrapper-after img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
 }
 

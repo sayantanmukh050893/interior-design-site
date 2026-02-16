@@ -1,0 +1,25 @@
+CLIENT DESIGN TRANSFORMATION PROMPT
+Generated: 2026-02-15T11:18:27.686170
+Theme: Personalized Design
+
+Transform this room into a Personalized Design interior.
+
+STYLE: Based on preference for Uncluttered space with lot of storage, traditional wall pieces on walls greenery, and less maintenance open space.
+COLORS: Beige and warm traditional accents like terracotta
+MOOD: Comfortable, welcoming
+
+CLIENT PREFERENCES:
+- Likes: Uncluttered space with lot of storage, traditional wall pieces on walls greenery, and less maintenance open space.
+- Dislikes: cluttered spaces and unorganised surrounding
+- Hobbies: I love spending family time, watching movies, doing yoga
+
+REQUIREMENTS: workspace, storages, and open spaces
+
+DESIGN RULES:
+- Keep room layout and architecture
+- Realistic furniture scale
+- Clean, organized space
+- Good lighting
+- Professional quality
+
+Generated Image: Madhuja_Mukhopadhyay_20260215_111827_transformed.png

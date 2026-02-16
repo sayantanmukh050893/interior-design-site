@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    
+    <button onclick="testHealth()">Test /health (GET)</button>
+    <button onclick="testGeneratePrompt()">Test /generate-prompt (POST)</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE_URL = window.location.origin;
+
+        function logResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function testHealth() {
+            logResult('Testing /health endpoint...', 'info');
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                logResult(`✓ Health check passed: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                logResult(`✗ Health check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGeneratePrompt() {
+            logResult('Testing /generate-prompt endpoint...', 'info');
+            try {
+                const testData = {
+                    name: "Test Client",
+                    email: "test@example.com",
+                    about: "Test about",
+                    preferred_colors: "Blue and White",
+                    likes: "Modern design",
+                    dislikes: "Clutter",
+                    hobbies: "Reading",
+                    requirements: "Bright and airy",
+                    additional_comments: "Test comments"
+                };
+
+                console.log('Sending POST request with data:', testData);
+                
+                const response = await fetch(`${API_BASE_URL}/generate-prompt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Array.from(response.headers.entries()));
+
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    logResult(`✗ Request failed with status ${response.status}: ${errorData}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                logResult(`✓ Prompt generated successfully!\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                logResult(`✗ Request failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Auto-test on load
+        window.onload = function() {
+            logResult('Page loaded. Click buttons to test API endpoints.', 'info');
+        };
+    </script>
+</body>
+</html>

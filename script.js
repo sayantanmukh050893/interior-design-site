@@ -110,11 +110,14 @@ if (contactForm) {
 
 // Know Better Form Handler
 const knowBetterForm = document.getElementById('knowBetterForm');
-const API_BASE_URL = 'http://localhost:5000'; // Update this based on your deployment
+const API_BASE_URL = window.location.origin; // Dynamically use the same domain as the frontend
+
+console.log(`[Interior Design] API Base URL: ${API_BASE_URL}`);
 
 if (knowBetterForm) {
     knowBetterForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.log('[Interior Design] Form submitted');
         
         // Get form data
         const formData = new FormData(knowBetterForm);
@@ -132,7 +135,11 @@ if (knowBetterForm) {
         
         const roomImage = formData.get('room_image');
         
+        console.log('[Interior Design] Client Data:', clientData);
+        console.log('[Interior Design] Room Image:', roomImage ? `${roomImage.name} (${roomImage.size} bytes)` : 'No image');
+        
         if (!roomImage || roomImage.size === 0) {
+            console.warn('[Interior Design] No room image provided');
             showNotification('Please upload a room image', 'error');
             return;
         }
@@ -140,6 +147,9 @@ if (knowBetterForm) {
         try {
             // Step 1: Generate prompt
             showNotification('Generating your design brief...', 'info');
+            
+            console.log(`[Interior Design] Sending POST to ${API_BASE_URL}/generate-prompt`);
+            console.log('[Interior Design] Request payload:', clientData);
             
             const promptResponse = await fetch(`${API_BASE_URL}/generate-prompt`, {
                 method: 'POST',
@@ -149,18 +159,29 @@ if (knowBetterForm) {
                 body: JSON.stringify(clientData)
             });
             
+            console.log(`[Interior Design] Response Status: ${promptResponse.status}`);
+            console.log('[Interior Design] Response Headers:', {
+                'Content-Type': promptResponse.headers.get('Content-Type'),
+                'Access-Control-Allow-Origin': promptResponse.headers.get('Access-Control-Allow-Origin')
+            });
+            
             if (!promptResponse.ok) {
-                throw new Error('Failed to generate prompt');
+                const errorText = await promptResponse.text();
+                console.error(`[Interior Design] API Error (${promptResponse.status}):`, errorText);
+                throw new Error(`Failed to generate prompt: ${promptResponse.status} ${promptResponse.statusText}`);
             }
             
             const promptData = await promptResponse.json();
+            console.log('[Interior Design] Prompt Data received:', promptData);
+            
             displayPromptResult(promptData.prompt, clientData, roomImage, promptData.theme_info);
             
             showNotification('Design brief generated! Ready to transform your room.', 'success');
             
         } catch (error) {
-            console.error('Error:', error);
-            showNotification('Error generating design brief. Please try again.', 'error');
+            console.error('[Interior Design] Error:', error);
+            console.error('[Interior Design] Error Stack:', error.stack);
+            showNotification(`Error generating design brief: ${error.message}`, 'error');
         }
     });
 }
@@ -201,12 +222,12 @@ function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
         const originalImageBase64 = e.target.result;
         
         promptContent.innerHTML = `
-            <div id="briefSection" style="margin-bottom: 2rem;">
+            <div id="briefSection" style="margin-bottom: 2rem; display: none;">
                 <h4>Your Personalized Design Brief</h4>
                 <pre style="background: var(--bg-light); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.9rem;">${prompt}</pre>
             </div>
             
-            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd; display: none;">
             
             <div id="imageLikeSliderContainer" style="margin-top: 2rem;">
                 <h4 style="text-align: center; margin-bottom: 1.5rem;">AI Room Transformation Preview</h4>
@@ -224,9 +245,22 @@ function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
                 </div>
                 
                 <div id="generationProgress" style="display: none; margin-top: 2rem; text-align: center;">
-                    <p style="margin-bottom: 1rem;">Generating your transformation... This may take a few minutes.</p>
-                    <div style="width: 100%; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden;">
-                        <div style="width: 0%; height: 100%; background: #C9A86A; animation: pulse 2s infinite;"></div>
+                    <div style="position: relative; width: 120px; height: 120px; margin: 0 auto 2rem;">
+                        <!-- Outer spinning ring -->
+                        <div style="position: absolute; width: 100%; height: 100%; border: 4px solid rgba(201, 168, 106, 0.2); border-radius: 50%; animation: spin 3s linear infinite;"></div>
+                        <!-- Middle spinning ring (reverse) -->
+                        <div style="position: absolute; width: 85%; height: 85%; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid rgba(201, 168, 106, 0.4); border-radius: 50%; animation: spin-reverse 2s linear infinite;"></div>
+                        <!-- Inner spinning ring -->
+                        <div style="position: absolute; width: 70%; height: 70%; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid #C9A86A; border-radius: 50%; border-top-color: transparent; border-right-color: transparent; animation: spin 1.5s linear infinite;"></div>
+                        <!-- Center dot -->
+                        <div style="position: absolute; width: 20px; height: 20px; background: #C9A86A; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(201, 168, 106, 0.5);"></div>
+                    </div>
+                    <p id="loadingText" style="margin-bottom: 1rem; font-size: 1rem; color: var(--secondary-color); font-weight: 600; height: 1.5rem;">Generating your transformation...</p>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 1rem;">This may take a few minutes</p>
+                    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;">
+                        <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.4; animation: bounce 1.2s ease-in-out infinite;"></div>
+                        <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.6; animation: bounce 1.2s ease-in-out infinite 0.2s;"></div>
+                        <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.8; animation: bounce 1.2s ease-in-out infinite 0.4s;"></div>
                     </div>
                 </div>
                 
@@ -248,14 +282,21 @@ function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
         }
         
         // Image comparison slider handler
+        // Left = original (0%), Right = transformed (100%)
         const sliderHandle = document.getElementById('sliderHandle');
         const imgWrapper = document.querySelector('.img-wrapper-after');
         
         if (sliderHandle) {
             sliderHandle.addEventListener('input', function(e) {
                 const value = e.target.value;
-                imgWrapper.style.width = (100 - value) + '%';
+                // Slider position determines transformed image width
+                // 0 = all original visible, 100 = all transformed visible
+                imgWrapper.style.width = value + '%';
+                // Update the slider thumb position
+                sliderHandle.style.left = value + '%';
             });
+            // Initialize slider position
+            sliderHandle.style.left = '50%';
         }
         
         // Transform button handler
@@ -270,6 +311,8 @@ function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
 // Transform Room Image
 async function transformRoomImage(imageFile, clientData, themeInfo, originalImageBase64) {
     try {
+        console.log('[Interior Design] Starting image transformation...');
+        
         const transformBtn = document.getElementById('transformBtn');
         const generationProgress = document.getElementById('generationProgress');
         const imageTransformed = document.getElementById('imageTransformed');
@@ -279,11 +322,34 @@ async function transformRoomImage(imageFile, clientData, themeInfo, originalImag
         transformBtn.disabled = true;
         generationProgress.style.display = 'block';
         
+        // Start cycling loading messages
+        const messages = [
+            'Generating your transformation...',
+            'Analyzing your space...',
+            'Applying design elements...',
+            'Enhancing colors and textures...',
+            'Finalizing your vision...',
+            'Almost there...'
+        ];
+        let messageIndex = 0;
+        const loadingText = document.getElementById('loadingText');
+        const messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % messages.length;
+            if (loadingText) {
+                loadingText.textContent = messages[messageIndex];
+            }
+        }, 3000);
+        
+        // Store interval ID to clear later
+        generationProgress.dataset.messageInterval = messageInterval;
+        
         // Prepare form data
         const formData = new FormData();
         formData.append('image', imageFile);
         formData.append('client_data', JSON.stringify(clientData));
         formData.append('theme_info', JSON.stringify(themeInfo || {}));
+        
+        console.log(`[Interior Design] POSTing to ${API_BASE_URL}/transform`);
         
         // Call transformation API
         const response = await fetch(`${API_BASE_URL}/transform`, {
@@ -291,21 +357,40 @@ async function transformRoomImage(imageFile, clientData, themeInfo, originalImag
             body: formData
         });
         
+        console.log(`[Interior Design] Transform Response Status: ${response.status}`);
+        
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Transformation failed');
+            const errorData = await response.text();
+            console.error(`[Interior Design] Transform Error (${response.status}):`, errorData);
+            throw new Error(`Transformation failed: ${response.status} ${response.statusText}`);
         }
         
         const result = await response.json();
+        console.log('[Interior Design] Transform result received');
         
         // Update the transformed image in the slider
         if (result.image_base64) {
             imageTransformed.src = `data:image/png;base64,${result.image_base64}`;
             
+            // Reset slider to middle position
+            sliderHandle.value = 50;
+            const imgWrapper = document.querySelector('.img-wrapper-after');
+            if (imgWrapper) {
+                imgWrapper.style.width = '50%';
+                sliderHandle.style.left = '50%';
+            }
+            
             // Enable slider interaction
             sliderHandle.disabled = false;
             sliderHandle.style.opacity = '1';
             sliderHandle.style.cursor = 'pointer';
+            
+            // Re-attach slider listener
+            sliderHandle.oninput = function(e) {
+                const value = e.target.value;
+                imgWrapper.style.width = value + '%';
+                sliderHandle.style.left = value + '%';
+            };
             
             // Show download button
             downloadBtn.style.display = 'inline-block';
@@ -322,17 +407,26 @@ async function transformRoomImage(imageFile, clientData, themeInfo, originalImag
             showNotification('Your room has been transformed successfully! Drag the slider to compare.', 'success');
         }
         
+        // Clear the message cycling interval
+        if (generationProgress.dataset.messageInterval) {
+            clearInterval(parseInt(generationProgress.dataset.messageInterval));
+        }
         generationProgress.style.display = 'none';
         transformBtn.disabled = false;
         transformBtn.textContent = 'Regenerate Transformation';
         
     } catch (error) {
-        console.error('Transformation Error:', error);
+        console.error('[Interior Design] Transformation Error:', error);
+        console.error('[Interior Design] Error Stack:', error.stack);
         showNotification(`Error transforming room: ${error.message}`, 'error');
         
         const transformBtn = document.getElementById('transformBtn');
         const generationProgress = document.getElementById('generationProgress');
         
+        // Clear the message cycling interval
+        if (generationProgress.dataset.messageInterval) {
+            clearInterval(parseInt(generationProgress.dataset.messageInterval));
+        }
         generationProgress.style.display = 'none';
         transformBtn.disabled = false;
     }
