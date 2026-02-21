@@ -1081,7 +1081,15 @@ function startTestimonialCarousel() {
 
 // ensure testimonials render and carousel starts after DOM is ready
 // (this listener is separate from the earlier one that handles page load logging)
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('Rendering testimonials on DOMContentLoaded');
+        renderTestimonials();
+        startTestimonialCarousel();
+    });
+} else {
+    // DOM is already fully loaded
+    console.log('DOM already loaded, rendering testimonials immediately');
     renderTestimonials();
     startTestimonialCarousel();
-});
+}
