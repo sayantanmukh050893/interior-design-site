@@ -365,6 +365,7 @@ section {
 
 .testimonials {
     background: var(--bg-light);
+    padding: 5rem 0;
 }
 
 .testimonials-grid {
@@ -380,6 +381,7 @@ section {
 /* each card takes full width of container */
 .testimonial-card {
     flex: 0 0 100%;
+    display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
