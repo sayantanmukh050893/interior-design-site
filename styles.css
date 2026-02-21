@@ -369,13 +369,13 @@ section {
 }
 
 .testimonials-grid {
-    overflow-x: hidden; /* only hide horizontal overflow */
+    overflow-x: hidden;
     display: flex;
     margin-top: 3rem;
-    /* let height adapt to content, but maintain a minimum so layout doesn't jump */
-    min-height: 320px;
-    height: auto;
+    min-height: 400px;
+    width: 100%;
     flex-wrap: nowrap;
+    position: relative;
 }
 
 /* each card takes full width of container */
@@ -391,6 +391,8 @@ section {
     box-shadow: var(--shadow);
     text-align: center;
     transition: transform 0.5s ease;
+    min-height: 320px;
+    width: 100%;
 }
 
 /* remove old visibility rules */

@@ -1029,20 +1029,29 @@ const testimonials = [
 
 function renderTestimonials() {
     const grid = document.getElementById('testimonialGrid');
-    if (!grid) return;
+    if (!grid) {
+        console.error('Testimonial grid not found');
+        return;
+    }
     grid.innerHTML = '';
+    if (testimonials.length === 0) {
+        console.error('No testimonials to display');
+        grid.innerHTML = '<p>No testimonials available</p>';
+        return;
+    }
     testimonials.forEach((t, idx) => {
         const card = document.createElement('div');
         card.className = 'testimonial-card';
         card.dataset.index = idx;
         card.innerHTML = `
-            <img src="${t.image}" alt="${t.name}">
+            <img src="${t.image}" alt="${t.name}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem;">
             <p class="review">"${t.review}"</p>
             <p class="customer-name">${t.name}</p>
             <p class="rating">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</p>
         `;
         grid.appendChild(card);
     });
+    console.log(`Rendered ${testimonials.length} testimonials`);
 }
 
 function startTestimonialCarousel() {
