@@ -370,17 +370,16 @@ section {
 
 .testimonials-grid {
     overflow-x: hidden;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
     margin-top: 3rem;
-    min-height: 400px;
     width: 100%;
-    flex-wrap: nowrap;
     position: relative;
 }
 
-/* each card takes full width of container */
+/* each card takes equal space in grid */
 .testimonial-card {
-    flex: 0 0 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -390,14 +389,17 @@ section {
     border-radius: 8px;
     box-shadow: var(--shadow);
     text-align: center;
-    transition: transform 0.5s ease;
-    min-height: 320px;
-    width: 100%;
+    transition: var(--transition);
+    min-height: 300px;
 }
 
 /* remove old visibility rules */
 .testimonial-card.active {
     /* no additional styles required; kept for compatibility if used elsewhere */
+}
+
+.testimonial-card {
+    transition: all 0.5s ease;
 }
 
 .testimonial-card img {

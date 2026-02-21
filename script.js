@@ -1017,13 +1017,13 @@ const testimonials = [
         name: 'Ananya Roy',
         review: 'Working with Mukh Interiors was a dream. They understood my style instantly and transformed my living room into a warm, inviting space.',
         rating: 5,
-        image: 'https://randomuser.me/api/portraits/women/68.jpg'
+        image: 'https://i.pravatar.cc/150?img=32'
     },
     {
         name: 'Rohan Singh',
         review: 'The attention to detail and professionalism was outstanding. Highly recommend for anyone needing a modern makeover.',
         rating: 4,
-        image: 'https://randomuser.me/api/portraits/men/45.jpg'
+        image: 'https://i.pravatar.cc/150?img=12'
     }
 ];
 
@@ -1033,49 +1033,54 @@ function renderTestimonials() {
         console.error('Testimonial grid not found');
         return;
     }
-    grid.innerHTML = '';
-    if (testimonials.length === 0) {
-        console.error('No testimonials to display');
-        grid.innerHTML = '<p>No testimonials available</p>';
-        return;
+    
+    // Clear existing content only if we have testimonials to render
+    if (testimonials.length > 0) {
+        grid.innerHTML = '';
+        testimonials.forEach((t, idx) => {
+            const card = document.createElement('div');
+            card.className = 'testimonial-card';
+            card.dataset.index = idx;
+            card.innerHTML = `
+                <img src="${t.image}" alt="${t.name}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem;">
+                <p class="review">"${t.review}"</p>
+                <p class="customer-name">${t.name}</p>
+                <p class="rating">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</p>
+            `;
+            grid.appendChild(card);
+        });
+        console.log(`Rendered ${testimonials.length} testimonials`);
+    } else {
+        console.warn('No testimonials available, using fallback HTML testimonials');
     }
-    testimonials.forEach((t, idx) => {
-        const card = document.createElement('div');
-        card.className = 'testimonial-card';
-        card.dataset.index = idx;
-        card.innerHTML = `
-            <img src="${t.image}" alt="${t.name}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem;">
-            <p class="review">"${t.review}"</p>
-            <p class="customer-name">${t.name}</p>
-            <p class="rating">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</p>
-        `;
-        grid.appendChild(card);
-    });
-    console.log(`Rendered ${testimonials.length} testimonials`);
 }
 
 function startTestimonialCarousel() {
     const grid = document.getElementById('testimonialGrid');
     const cards = document.querySelectorAll('.testimonial-card');
-    if (!grid || cards.length === 0) return;
+    if (!grid || cards.length <= 1) return;
+    
     let current = 0;
 
-    // position cards in a row using the container's width for precise alignment
-    function updatePositions() {
-        const width = grid.clientWidth;
+    // Hide all cards except the first one
+    function updateVisibility() {
         cards.forEach((card, i) => {
-            card.style.transform = `translateX(${(i - current) * width}px)`;
+            if (i === current) {
+                card.style.display = 'flex';
+                card.style.opacity = '1';
+            } else {
+                card.style.display = 'none';
+                card.style.opacity = '0';
+            }
         });
     }
 
-    updatePositions();
+    updateVisibility();
 
-    // recalc positions when the window width changes so cards stay aligned
-    window.addEventListener('resize', updatePositions);
-
+    // Rotate testimonials every 5 seconds
     setInterval(() => {
         current = (current + 1) % cards.length;
-        updatePositions();
+        updateVisibility();
     }, 5000);
 }
 
