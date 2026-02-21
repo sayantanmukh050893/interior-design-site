@@ -110,9 +110,24 @@ if (contactForm) {
 
 // Know Better Form Handler
 const knowBetterForm = document.getElementById('knowBetterForm');
-const API_BASE_URL = window.location.origin; // Dynamically use the same domain as the frontend
+
+// Determine API URL - handles both local and deployed environments
+const API_BASE_URL = (() => {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    
+    // Check if running on localhost/127.0.0.1
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+        // Local development - try port 5001 (Flask), fallback to same origin
+        return `${protocol}//${hostname}:5001`;
+    }
+    
+    // Production or deployed - use same origin
+    return window.location.origin;
+})();
 
 console.log(`[Interior Design] API Base URL: ${API_BASE_URL}`);
+console.log(`[Interior Design] Frontend URL: ${window.location.origin}`);
 
 if (knowBetterForm) {
     knowBetterForm.addEventListener('submit', async function(e) {
@@ -198,6 +213,7 @@ if (knowBetterForm) {
         } catch (error) {
             console.error('[Interior Design] Error:', error);
             console.error('[Interior Design] Error Stack:', error.stack);
+            showNotification(`Transformation Error: ${error.message}`, 'error');
             showNotification(`Error: ${error.message}`, 'error');
         }
     });
