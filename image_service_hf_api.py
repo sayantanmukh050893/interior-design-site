@@ -22,50 +22,54 @@ class HuggingFaceInteriorDesignTransformer:
         self.prompt_history_dir.mkdir(exist_ok=True)
         self.output_dir.mkdir(exist_ok=True)
         
-        # Get API token from environment
-        self.api_token = os.getenv("HF_API_TOKEN")
-        if not self.api_token:
-            raise ValueError(
-                "HF_API_TOKEN environment variable not set. "
-                "Get your token from https://huggingface.co/settings/tokens"
-            )
+        # Get API token from environment (optional but recommended)
+        self.api_token = os.getenv("HF_API_TOKEN", None)
         
         # Hugging Face API endpoint
         self.api_base_url = "https://api-inference.huggingface.co/models"
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
         
-        # Model to use (Instruct-Pix2Pix for image-to-image transformations)
-        self.model = "timbrooks/instruct-pix2pix"
+        # Available models in order of preference (text-to-image)
+        # FLUX.2-klein-9B is the primary model, with fallback options
+        self.models = [
+            "black-forest-labs/FLUX.2-klein-9B",
+            "black-forest-labs/FLUX.1-dev",
+            "stabilityai/stable-diffusion-3-medium",
+            "stabilityai/stable-diffusion-xl-base-1.0"
+        ]
+        self.current_model_idx = 0
+        self.model = self.models[0]
         
         # Status
         self.device = "api"
+        
+        if not self.api_token:
+            print("⚠️ Warning: HF_API_TOKEN not set. API calls may be rate-limited.")
+            print("Set HF_API_TOKEN environment variable for better performance.")
+            print("Get your token from https://huggingface.co/settings/tokens")
     
     def load_models(self):
         """No-op: Models are loaded on HF servers"""
-        print("Using Hugging Face Inference API - models already loaded on remote servers")
+        print(f"Using Hugging Face Inference API - model: {self.model} (FLUX.2-klein-9B)")
     
     def build_detailed_prompt(self, client_data, theme_info):
-        """Build transformation prompt"""
+        """Build transformation prompt for FLUX text-to-image model"""
         
-        prompt = f"""Transform this room into a {theme_info.get('theme_name', 'Modern')} interior.
+        prompt = f"""Professional interior design photograph of a {theme_info.get('theme_name', 'Modern')} {client_data.get('room_type', 'living room')}.
 
-STYLE: {theme_info.get('style_description', 'Contemporary')}
-COLORS: {theme_info.get('color_palette', 'Neutral tones')}
-MOOD: Comfortable, welcoming
+DESIGN STYLE: {theme_info.get('style_description', 'Contemporary and sophisticated')}
+COLOR PALETTE: {theme_info.get('color_palette', 'Neutral tones with warm accents')}
+ROOM DIMENSIONS: {client_data.get('room_length', 'Standard')} feet x {client_data.get('room_width', 'Standard')} feet
 
-CLIENT PREFERENCES:
-- Likes: {client_data.get('likes', '')}
-- Dislikes: {client_data.get('dislikes', '')}
-- Hobbies: {client_data.get('hobbies', '')}
-
-REQUIREMENTS: {client_data.get('requirements', '')}
-
-DESIGN RULES:
-- Keep room layout and architecture
-- Realistic furniture scale
-- Clean, organized space
-- Good lighting
-- Professional quality"""
+KEY DESIGN FEATURES:
+- {client_data.get('likes', 'Well-organized and spacious layout')}
+- Natural and ambient lighting
+- Premium furniture and decoration
+- Professional interior styling
+- High-end design finish
+- Photorealistic, magazine-quality photography
+- 8K resolution, sharp details
+- Architectural digest quality"""
         
         return prompt.strip()
     
@@ -108,10 +112,11 @@ Generated Image: {image_filename}
     
     def transform_room(self, image, client_data, theme_info):
         """
-        Transform room image using Hugging Face Inference API
+        Transform room using text-to-image via Hugging Face Inference API
+        Uses multi-model fallback strategy for reliability
         
         Args:
-            image: PIL Image or image path
+            image: PIL Image or image path (input reference image)
             client_data: dict with client preferences
             theme_info: dict with theme details
         
@@ -120,27 +125,42 @@ Generated Image: {image_filename}
         """
         
         try:
-            # Load image
+            # Load reference image (used for context, not direct transformation)
             if isinstance(image, str):
-                image = Image.open(image).convert("RGB")
+                ref_image = Image.open(image).convert("RGB")
             else:
-                image = image.convert("RGB")
+                ref_image = image.convert("RGB")
             
-            # Resize for API
-            image = self._resize_image(image)
-            
-            # Build prompt
+            # Build prompt for text-to-image generation
             full_prompt = self.build_detailed_prompt(client_data, theme_info)
             
-            print(f"Sending to Hugging Face API with prompt:\n{full_prompt}")
-            print(f"Calling Instruct-Pix2Pix for image transformation...")
+            print(f"\nGenerating interior design using FLUX.2-klein-9B...")
+            print(f"Prompt: {full_prompt[:100]}...")
             
-            # Call Instruct-Pix2Pix
-            result_image = self._call_instruct_pix2pix(image, full_prompt)
+            # Try different models with fallback
+            result_image = None
+            for idx, model in enumerate(self.models, 1):
+                print(f"\n[Strategy {idx}] Trying {model}...")
+                self.current_model_idx = idx - 1
+                self.model = model
+                
+                result_image = self._call_text_to_image(full_prompt)
+                
+                if result_image is not None:
+                    print(f"✅ Success with {model}!")
+                    break
+                else:
+                    if idx < len(self.models):
+                        print(f"⚠️ {model} failed, trying next model...")
             
+            # If all API models fail, use local transformer
             if result_image is None:
-                print("Transformation failed, using original image.")
-                result_image = image
+                print("\n⚠️ All API models failed (including FLUX.2-klein-9B). Using local style transformer...")
+                local_transformer = LocalImageTransformer()
+                result_image = local_transformer._apply_style_transform(ref_image, theme_info)
+                model_used = "Local Style Transform"
+            else:
+                model_used = f"FLUX.2-klein-9B ({self.model})" if "FLUX" in self.model else f"Fallback Model ({self.model})"
             
             # Save result
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -169,71 +189,43 @@ Generated Image: {image_filename}
                 "prompt_history": prompt_file,
                 "theme": theme_info.get('theme_name'),
                 "timestamp": timestamp,
-                "model": "Hugging Face Inference API"
+                "model": model_used
             }
             
         except Exception as e:
             print(f"Error in transform_room: {str(e)}")
             raise
     
-    def _call_instruct_pix2pix(self, image, prompt):
-        """Call Instruct-Pix2Pix via Hugging Face Inference API"""
+    def _call_text_to_image(self, prompt):
+        """Call FLUX.2-klein-9B text-to-image model via HF Inference API"""
         try:
-            # Convert PIL image to PNG bytes
-            img_byte_arr = BytesIO()
-            image.save(img_byte_arr, format="PNG")
-            img_byte_arr.seek(0)
-            
-            # Prepare multipart form data (required by HF Inference API)
-            files = {
-                'image': ('image.png', img_byte_arr.getvalue(), 'image/png')
-            }
-            data = {
-                'prompt': prompt,
-                'negative_prompt': 'blurry, low quality, distorted',
-                'num_inference_steps': 20,
-                'guidance_scale': 7.5,
-                'image_guidance_scale': 1.5
-            }
-            
             url = f"{self.api_base_url}/{self.model}"
-            print(f"Calling Instruct-Pix2Pix model at {url}...")
+            
+            # Prepare JSON payload for text-to-image
+            payload = {
+                "inputs": prompt
+            }
             
             response = requests.post(
                 url,
                 headers=self.headers,
-                files=files,
-                data=data,
+                json=payload,
                 timeout=120
             )
             
             print(f"API Response status: {response.status_code}")
             
             if response.status_code == 200:
-                # Response should be image binary
+                # Response is image binary
                 result_image = Image.open(BytesIO(response.content))
-                print("✅ Instruct-Pix2Pix transformation successful!")
                 return result_image
-            elif response.status_code == 410:
-                print(f"⚠️ Endpoint deprecated (410), retrying with router...")
-                # Try router endpoint as fallback
-                url_router = url.replace('api-inference.huggingface.co', 'router.huggingface.co')
-                response = requests.post(url_router, headers=self.headers, files=files, data=data, timeout=120)
-                if response.status_code == 200:
-                    result_image = Image.open(BytesIO(response.content))
-                    print("✅ Transformation successful via router!")
-                    return result_image
-                else:
-                    print(f"❌ Router error: {response.status_code}")
-                    return None
             else:
-                print(f"❌ Error: {response.status_code}")
-                response_text = response.text[:300] if response.text else "No response body"
-                print(f"Response: {response_text}")
+                status_desc = response.text[:100] if response.text else "Unknown error"
+                print(f"❌ Error {response.status_code}: {status_desc}")
                 return None
             
         except Exception as e:
-            print(f"❌ Error calling model: {str(e)}")
+            print(f"❌ Error calling {self.model}: {str(e)}")
             return None
 
 

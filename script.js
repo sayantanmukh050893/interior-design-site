@@ -116,7 +116,9 @@ console.log(`[Interior Design] API Base URL: ${API_BASE_URL}`);
 
 if (knowBetterForm) {
     knowBetterForm.addEventListener('submit', async function(e) {
+        console.log('[Interior Design] Form submit event triggered');
         e.preventDefault();
+        console.log('[Interior Design] preventDefault called - form submission stopped');
         console.log('[Interior Design] Form submitted');
         
         // Get form data
@@ -130,7 +132,10 @@ if (knowBetterForm) {
             dislikes: formData.get('dislikes'),
             hobbies: formData.get('hobbies'),
             requirements: formData.get('requirements'),
-            additional_comments: formData.get('additional_comments')
+            additional_comments: formData.get('additional_comments'),
+            room_type: formData.get('room_type'),
+            room_length: formData.get('room_length'),
+            room_width: formData.get('room_width')
         };
         
         const roomImage = formData.get('room_image');
@@ -145,43 +150,55 @@ if (knowBetterForm) {
         }
         
         try {
-            // Step 1: Generate prompt
-            showNotification('Generating your design brief...', 'info');
+            // Step 1: Generate the prompt from form data
+            console.log('[Interior Design] Starting two-step transformation process...');
+            showNotification('Generating your personalized design prompt...', 'info');
             
-            console.log(`[Interior Design] Sending POST to ${API_BASE_URL}/generate-prompt`);
-            console.log('[Interior Design] Request payload:', clientData);
-            
+            console.log('[Interior Design] Step 1: Calling /generate-prompt with form data');
             const promptResponse = await fetch(`${API_BASE_URL}/generate-prompt`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(clientData)
             });
             
-            console.log(`[Interior Design] Response Status: ${promptResponse.status}`);
-            console.log('[Interior Design] Response Headers:', {
-                'Content-Type': promptResponse.headers.get('Content-Type'),
-                'Access-Control-Allow-Origin': promptResponse.headers.get('Access-Control-Allow-Origin')
-            });
-            
             if (!promptResponse.ok) {
-                const errorText = await promptResponse.text();
-                console.error(`[Interior Design] API Error (${promptResponse.status}):`, errorText);
+                const errorData = await promptResponse.text();
+                console.error(`[Interior Design] Generate-prompt error (${promptResponse.status}):`, errorData);
                 throw new Error(`Failed to generate prompt: ${promptResponse.status} ${promptResponse.statusText}`);
             }
             
             const promptData = await promptResponse.json();
-            console.log('[Interior Design] Prompt Data received:', promptData);
+            console.log('[Interior Design] Prompt generated successfully');
+            console.log('[Interior Design] Generated prompt:', promptData.prompt);
             
-            displayPromptResult(promptData.prompt, clientData, roomImage, promptData.theme_info);
+            const generatedPrompt = promptData.prompt;
+            const themeInfo = promptData.theme_info || {
+                theme_name: "Personalized Design",
+                room_type: clientData.room_type
+            };
             
-            showNotification('Design brief generated! Ready to transform your room.', 'success');
+            // Step 2: Transform the room image using the generated prompt
+            console.log('[Interior Design] Step 2: Calling /transform with image and generated prompt');
+            showNotification('Transforming your room with FLUX.2-klein-9B...', 'info');
+            
+            await transformRoomImageDirect(roomImage, clientData, themeInfo, generatedPrompt);
+            console.log('[Interior Design] transformRoomImageDirect completed');
+            
+            // Scroll to the transformation result
+            setTimeout(() => {
+                const promptResult = document.getElementById('promptResult');
+                if (promptResult && promptResult.style.display !== 'none') {
+                    console.log('[Interior Design] Scrolling to transformation result');
+                    promptResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 500);
             
         } catch (error) {
             console.error('[Interior Design] Error:', error);
             console.error('[Interior Design] Error Stack:', error.stack);
-            showNotification(`Error generating design brief: ${error.message}`, 'error');
+            showNotification(`Error: ${error.message}`, 'error');
         }
     });
 }
@@ -189,6 +206,10 @@ if (knowBetterForm) {
 // Prompt Builder Function (local version for backup)
 function buildDesignerPrompt(data) {
     return `You are a senior interior designer.
+
+Room Details:
+Type: ${data.room_type}
+Dimensions: ${data.room_length} feet x ${data.room_width} feet
 
 Client Information:
 Name: ${data.name}
@@ -205,14 +226,279 @@ Additional Comments: ${data.additional_comments || 'None'}
 
 Create:
 
-- Theme recommendation based on preferences
+- Theme recommendation based on the room type and preferences
 - Mood board concept description
-- Specific design elements to incorporate
-- Design suggestions for their space transformation`;
+- Specific design elements to incorporate based on room dimensions
+- Design suggestions for their space transformation
+- Furniture placement and layout recommendations for the ${data.room_length}ft x ${data.room_width}ft space`;
 }
 
-// Display Prompt Result with Image Transformation
-function displayPromptResult(prompt, clientData, roomImage, themeInfo) {
+// Transform Room Image Directly (Skipping Design Brief)
+async function transformRoomImageDirect(imageFile, clientData, themeInfo, generatedPrompt = null) {
+    try {
+        console.log('[Interior Design] Starting direct image transformation...');
+        console.log('[Interior Design] Client Data:', clientData);
+        console.log('[Interior Design] Theme Info:', themeInfo);
+        console.log('[Interior Design] Generated Prompt provided:', !!generatedPrompt);
+        
+        // Convert image to base64 for preview (Promise-based)
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const originalImageBase64 = e.target.result;
+                    
+                    // Create the slider UI directly
+                    const promptResult = document.getElementById('promptResult');
+                    const promptContent = document.getElementById('promptContent');
+                    
+                    if (!promptResult || !promptContent) {
+                        throw new Error('Prompt result container not found');
+                    }
+                    
+                    promptContent.innerHTML = `
+                        <div id="imageLikeSliderContainer" style="margin-top: 2rem;">
+                            <h4 style="text-align: center; margin-bottom: 1.5rem;">Your Transformed Space</h4>
+                            
+                            <div class="image-comparison-slider" id="imageComparisonSlider">
+                                <div class="img-wrapper-before">
+                                    <img id="imageOriginal" src="${originalImageBase64}" alt="Original room">
+                                    <span class="label label-before">Original</span>
+                                </div>
+                                <div class="img-wrapper-after">
+                                    <img id="imageTransformed" src="${originalImageBase64}" alt="Transformed room">
+                                    <span class="label label-after">Transformed</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="50" class="slider-handle" id="sliderHandle" aria-label="Comparison slider">
+                            </div>
+                            
+                            <div id="generationProgress" style="margin-top: 2rem; text-align: center;">
+                                <div style="position: relative; width: 120px; height: 120px; margin: 0 auto 2rem;">
+                                    <!-- Outer spinning ring -->
+                                    <div style="position: absolute; width: 100%; height: 100%; border: 4px solid rgba(201, 168, 106, 0.2); border-radius: 50%; animation: spin 3s linear infinite;"></div>
+                                    <!-- Middle spinning ring (reverse) -->
+                                    <div style="position: absolute; width: 85%; height: 85%; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid rgba(201, 168, 106, 0.4); border-radius: 50%; animation: spin-reverse 2s linear infinite;"></div>
+                                    <!-- Inner spinning ring -->
+                                    <div style="position: absolute; width: 70%; height: 70%; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid #C9A86A; border-radius: 50%; border-top-color: transparent; border-right-color: transparent; animation: spin 1.5s linear infinite;"></div>
+                                    <!-- Center dot -->
+                                    <div style="position: absolute; width: 20px; height: 20px; background: #C9A86A; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(201, 168, 106, 0.5);"></div>
+                                </div>
+                                <p id="loadingText" style="margin-bottom: 1rem; font-size: 1rem; color: var(--secondary-color); font-weight: 600; height: 1.5rem;">Transforming with FLUX.2-klein-9B...</p>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 1rem;">This may take a few minutes</p>
+                                <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;">
+                                    <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.4; animation: bounce 1.2s ease-in-out infinite;"></div>
+                                    <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.6; animation: bounce 1.2s ease-in-out infinite 0.2s;"></div>
+                                    <div style="width: 8px; height: 8px; background: #C9A86A; border-radius: 50%; opacity: 0.8; animation: bounce 1.2s ease-in-out infinite 0.4s;"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="sliderButtonContainer" style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
+                                <button type="button" id="downloadComparison" class="btn btn-secondary" style="display: none;">Download Comparison</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    promptResult.style.display = 'block';
+                    console.log('[Interior Design] Slider UI displayed');
+                    
+                    // Add close button handler
+                    const closeBtn = promptResult.querySelector('.close-prompt');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            promptResult.style.display = 'none';
+                        });
+                    }
+                    
+                    // Setup slider
+                    const sliderHandle = document.getElementById('sliderHandle');
+                    const imgWrapper = document.querySelector('.img-wrapper-after');
+                    
+                    if (sliderHandle) {
+                        sliderHandle.addEventListener('input', function(e) {
+                            const value = e.target.value;
+                            imgWrapper.style.width = value + '%';
+                            sliderHandle.style.left = value + '%';
+                        });
+                        sliderHandle.style.left = '50%';
+                    }
+                    
+                    // Now call the transform API with the generated prompt
+                    await performImageTransformation(imageFile, clientData, themeInfo, originalImageBase64, generatedPrompt);
+                    resolve();
+                } catch (error) {
+                    console.error('[Interior Design] Error in FileReader onload:', error);
+                    reject(error);
+                }
+            };
+            
+            reader.onerror = function(error) {
+                console.error('[Interior Design] FileReader error:', error);
+                reject(new Error('Failed to read image file'));
+            };
+            
+            console.log('[Interior Design] Starting FileReader...');
+            reader.readAsDataURL(imageFile);
+        });
+        
+    } catch (error) {
+        console.error('[Interior Design] Direct Transform Error:', error);
+        showNotification(`Error: ${error.message}`, 'error');
+        throw error;
+    }
+}
+
+// Perform actual image transformation
+async function performImageTransformation(imageFile, clientData, themeInfo, originalImageBase64, generatedPrompt = null) {
+    try {
+        console.log('[Interior Design] Calling transformation endpoint...');
+        console.log('[Interior Design] Image file:', imageFile.name);
+        console.log('[Interior Design] Client name:', clientData.name);
+        console.log('[Interior Design] Using generated prompt:', !!generatedPrompt);
+        
+        const generationProgress = document.getElementById('generationProgress');
+        const imageTransformed = document.getElementById('imageTransformed');
+        const sliderHandle = document.getElementById('sliderHandle');
+        const downloadBtn = document.getElementById('downloadComparison');
+        
+        if (!generationProgress || !imageTransformed || !sliderHandle) {
+            throw new Error('Required UI elements not found. Please refresh and try again.');
+        }
+        
+        // Start cycling loading messages
+        const messages = [
+            'Analyzing your space with AI...',
+            'Applying design elements...',
+            'Enhancing colors and textures...',
+            'Generating with FLUX.2-klein-9B...',
+            'Finalizing your vision...',
+            'Almost there...'
+        ];
+        let messageIndex = 0;
+        const loadingText = document.getElementById('loadingText');
+        const messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % messages.length;
+            if (loadingText) {
+                loadingText.textContent = messages[messageIndex];
+            }
+        }, 3000);
+        
+        generationProgress.dataset.messageInterval = messageInterval;
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('client_data', JSON.stringify(clientData));
+        formData.append('theme_info', JSON.stringify(themeInfo || {}));
+        
+        // If a generated prompt was provided, append it to the form data
+        if (generatedPrompt) {
+            console.log('[Interior Design] Appending generated prompt to transform request');
+            formData.append('prompt', generatedPrompt);
+        }
+        
+        console.log(`[Interior Design] POSTing to ${API_BASE_URL}/transform`);
+        console.log('[Interior Design] FormData prepared');
+        
+        // Call transformation API
+        const response = await fetch(`${API_BASE_URL}/transform`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log(`[Interior Design] Transform Response Status: ${response.status}`);
+        console.log(`[Interior Design] Response Headers:`, {
+            'Content-Type': response.headers.get('Content-Type'),
+            'Content-Length': response.headers.get('Content-Length')
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`[Interior Design] Transform Error (${response.status}):`, errorData);
+            throw new Error(`Transformation failed: ${response.status} ${response.statusText}\n${errorData}`);
+        }
+        
+        const result = await response.json();
+        console.log('[Interior Design] Transform result received:', result);
+        console.log('[Interior Design] Image Base64 length:', result.image_base64 ? result.image_base64.length : 'N/A');
+        
+        // Clear the message cycling interval before updating
+        if (generationProgress.dataset.messageInterval) {
+            clearInterval(parseInt(generationProgress.dataset.messageInterval));
+        }
+        
+        // Update the transformed image in the slider
+        if (result.image_base64) {
+            console.log('[Interior Design] Updating transformed image...');
+            imageTransformed.src = `data:image/png;base64,${result.image_base64}`;
+            
+            // Wait for image to load
+            await new Promise((resolve) => {
+                imageTransformed.onload = resolve;
+                imageTransformed.onerror = () => {
+                    console.warn('[Interior Design] Image failed to load, continuing anyway');
+                    resolve();
+                };
+                // Timeout after 5 seconds
+                setTimeout(resolve, 5000);
+            });
+            
+            console.log('[Interior Design] Image loaded, updating slider...');
+            
+            // Reset slider to middle position
+            sliderHandle.value = 50;
+            const imgWrapper = document.querySelector('.img-wrapper-after');
+            if (imgWrapper) {
+                imgWrapper.style.width = '50%';
+                sliderHandle.style.left = '50%';
+            }
+            
+            // Enable slider interaction
+            sliderHandle.disabled = false;
+            sliderHandle.style.opacity = '1';
+            sliderHandle.style.cursor = 'pointer';
+            
+            // Show download button
+            downloadBtn.style.display = 'inline-block';
+            
+            // Setup download functionality
+            downloadBtn.onclick = () => {
+                downloadComparisonImage(
+                    originalImageBase64.split(',')[1],
+                    result.image_base64,
+                    clientData.name
+                );
+            };
+            
+            console.log('[Interior Design] Transformation complete!');
+            showNotification('Your room has been transformed with FLUX.2-klein-9B! Drag the slider to compare.', 'success');
+        } else {
+            throw new Error('No image returned from transformation API');
+        }
+        
+        // Hide loading animation
+        generationProgress.style.display = 'none';
+        
+    } catch (error) {
+        console.error('[Interior Design] Transformation Error:', error);
+        console.error('[Interior Design] Error Stack:', error.stack);
+        showNotification(`Error transforming room: ${error.message}`, 'error');
+        
+        const generationProgress = document.getElementById('generationProgress');
+        
+        // Clear the message cycling interval
+        if (generationProgress && generationProgress.dataset.messageInterval) {
+            clearInterval(parseInt(generationProgress.dataset.messageInterval));
+        }
+        if (generationProgress) {
+            generationProgress.style.display = 'none';
+        }
+        
+        throw error;
+    }
+}
+
+
     const promptResult = document.getElementById('promptResult');
     const promptContent = document.getElementById('promptContent');
     

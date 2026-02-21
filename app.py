@@ -10,15 +10,23 @@ import os
 from pathlib import Path
 import logging
 from dotenv import load_dotenv
-from image_service_hf_api import get_transformer
 import json
 from io import BytesIO
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize transformer (uses Hugging Face API or mock based on HF_API_TOKEN)
-transformer = get_transformer()
+# Initialize transformer (multi-strategy approach)
+transformer = None
+try:
+    from image_service_flux_multi import FLUXTransformer
+    transformer = FLUXTransformer()
+    logger = logging.getLogger(__name__)
+    logger.info("✅ Multi-strategy FLUX transformer initialized")
+except Exception as e:
+    logger = logging.getLogger(__name__)
+    logger.error(f"Failed to initialize transformer: {str(e)}")
+    transformer = None
 
 # Flask app setup
 app = Flask(__name__, static_folder='.', static_url_path='')
@@ -91,14 +99,22 @@ def load_models_endpoint():
 @app.route('/transform', methods=['POST'])
 def transform_image():
     """
-    Main transformation endpoint
+    Main transformation endpoint using FLUX.2-klein-9B via HuggingFace Spaces Gradio API
     
     Expects:
     - image: Image file
     - client_data: JSON with client information
-    - theme_info: JSON with theme details
+    - theme_info: JSON with theme details (optional - will be generated from client_data if not provided)
+    - prompt: Optional pre-generated prompt from /generate-prompt endpoint
     """
     try:
+        # Check transformer initialization
+        if transformer is None:
+            return jsonify({
+                "status": "error",
+                "message": "Transformer not initialized. Please check HF_API_TOKEN and Gradio client installation."
+            }), 500
+        
         # Check if image file is present
         if 'image' not in request.files:
             return jsonify({
@@ -123,6 +139,7 @@ def transform_image():
         # Get form data
         client_data_str = request.form.get('client_data', '{}')
         theme_info_str = request.form.get('theme_info', '{}')
+        prompt_str = request.form.get('prompt', None)  # Optional pre-generated prompt
         
         try:
             client_data = json.loads(client_data_str)
@@ -133,18 +150,44 @@ def transform_image():
                 "message": "Invalid JSON in client_data or theme_info"
             }), 400
         
+        # If theme_info is not provided or minimal, generate it from client_data
+        if not theme_info or 'style_description' not in theme_info:
+            logger.info("Generating theme_info from client_data")
+            theme_info = {
+                "theme_name": "Personalized Design",
+                "room_type": client_data.get('room_type', 'living room'),
+                "style_description": f"Based on preference for {client_data.get('likes', 'modern style')}",
+                "color_palette": client_data.get('preferred_colors', 'Neutral tones'),
+                "mood": "Comfortable, welcoming, and functional",
+                "design_elements": f"Incorporating hobbies: {client_data.get('hobbies', 'reading, relaxation')}"
+            }
+        
         # Save uploaded file temporarily
         filename = secure_filename(file.filename)
         temp_path = UPLOAD_FOLDER / filename
         file.save(str(temp_path))
         
         logger.info(f"Processing image: {filename}")
+        logger.info(f"Using FLUX.2-klein-9B for transformation with theme: {theme_info.get('theme_name')}")
+        
+        # If a prompt was provided, override theme_prompt generation
+        if prompt_str:
+            logger.info("Using provided prompt for transformation")
+            # Temporarily override the build_detailed_prompt method
+            original_build_prompt = transformer.build_detailed_prompt
+            transformer.build_detailed_prompt = lambda cd, ti: prompt_str
         
         # Transform image
         result = transformer.transform_room(str(temp_path), client_data, theme_info)
         
+        # Restore original method if we overrode it
+        if prompt_str:
+            transformer.build_detailed_prompt = original_build_prompt
+        
         # Clean up temp file
         temp_path.unlink()
+        
+        logger.info(f"Transformation successful. Model used: {result.get('model')}")
         
         return jsonify(result)
         
@@ -161,6 +204,9 @@ def generate_prompt():
     """
     Generate detailed design prompt from client data
     
+    This prompt can be passed to the /transform endpoint as the 'prompt' parameter
+    for direct use with FLUX.2-klein-9B via HuggingFace Spaces Gradio API.
+    
     Expects JSON:
     - client_name
     - preferred_colors
@@ -169,8 +215,19 @@ def generate_prompt():
     - hobbies
     - requirements
     - additional_comments
+    
+    Returns:
+    - prompt: The generated prompt ready for image transformation
+    - theme_info: Theme details extracted from client data
     """
     try:
+        # Check transformer initialization
+        if transformer is None:
+            return jsonify({
+                "status": "error",
+                "message": "Transformer not initialized. Please check HF_API_TOKEN and Gradio client installation."
+            }), 500
+        
         data = request.get_json()
         
         if not data:

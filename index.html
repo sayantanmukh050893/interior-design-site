@@ -26,6 +26,7 @@
                 <li><a href="#home">Home</a></li>
                 <li><a href="#about">About</a></li>
                 <li><a href="#services">Services</a></li>
+                <li><a href="#team">Team</a></li>
                 <li><a href="#why-choose">Why Us</a></li>
                 <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#blog">Insights</a></li>
@@ -256,6 +257,50 @@
         </div>
     </section>
 
+    <!-- Team Section -->
+    <section id="team" class="team">
+        <div class="container">
+            <div class="section-header centered">
+                <span class="section-tag">Our Team</span>
+                <h2>Meet The Expert</h2>
+                <p class="section-desc">Bringing passion, expertise, and personalized attention to every project</p>
+            </div>
+            
+            <div class="team-member">
+                <div class="team-member-image">
+                    <img src="madhuja_ghosh_portfolio.png" alt="Madhuja Ghosh, Interior Designer">
+                </div>
+                
+                <div class="team-member-content">
+                    <h3>Madhuja Ghosh</h3>
+                    <p class="team-role">Interior Designer & Design Consultant</p>
+                    
+                    <p class="team-intro">Madhuja Ghosh is a passionate and accomplished Interior Designer with over 9+ years of experience in teaching Interior Designing and mentoring aspiring designers. With a strong foundation in design principles and practical industry knowledge, she has successfully guided students to transform creativity into structured, functional, and aesthetically refined spaces.</p>
+                    
+                    <p>Her expertise spans across multiple dimensions of interior design, including residential and commercial space planning, color theory, furniture design, lighting concepts, material selection, spatial ergonomics, sustainable design practices, and design psychology. She brings a balanced approach that blends artistic vision with technical precision.</p>
+                    
+                    <div class="expertise-section">
+                        <h4>Areas of Specialization</h4>
+                        <ul class="expertise-list">
+                            <li>Concept development and theme-based interior styling</li>
+                            <li>Space optimization and functional planning</li>
+                            <li>Modular kitchen and wardrobe design</li>
+                            <li>Lighting design and ambience creation</li>
+                            <li>Sustainable and eco-conscious interiors</li>
+                            <li>AutoCAD, SketchUp, and 3D visualization techniques</li>
+                            <li>Client presentation and design communication skills</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="team-cta">
+                        <p><strong>Ready to transform your space?</strong></p>
+                        <a href="#contact" class="btn btn-primary">Book a Consultation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Gallery Section -->
     <section id="gallery" class="gallery">
         <div class="container">
@@ -423,18 +468,46 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block">Generate Design Brief</button>
-                <p class="form-note">We'll create a personalized design brief based on your preferences</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="kb-room-type">Room Type *</label>
+                        <select id="kb-room-type" name="room_type" required>
+                            <option value="">Select a room type</option>
+                            <option value="bedroom">Bedroom</option>
+                            <option value="drawing-room">Drawing Room</option>
+                            <option value="living-room">Living Room</option>
+                            <option value="kitchen">Kitchen</option>
+                            <option value="bathroom">Bathroom</option>
+                            <option value="dining-room">Dining Room</option>
+                            <option value="office">Office</option>
+                            <option value="study-room">Study Room</option>
+                            <option value="home-gym">Home Gym</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="kb-room-length">Room Length (in feet) *</label>
+                        <input type="number" id="kb-room-length" name="room_length" placeholder="e.g., 15" min="1" step="0.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="kb-room-width">Room Width (in feet) *</label>
+                        <input type="number" id="kb-room-width" name="room_width" placeholder="e.g., 12" min="1" step="0.5" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Transform Your Space</button>
+                <p class="form-note">Using FLUX.2-klein-9B - Your room will be transformed instantly with AI</p>
             </form>
 
-            <!-- Generated Prompt Display -->
+            <!-- Generated Transformation Display -->
             <div id="promptResult" class="prompt-result" style="display: none;">
                 <div class="prompt-header">
-                    <h3>Your Personalized Design Brief</h3>
-                    <button class="close-prompt" aria-label="Close">×</button>
+                    <button type="button" class="close-prompt" aria-label="Close">×</button>
                 </div>
                 <div id="promptContent" class="prompt-content"></div>
-                <button class="btn btn-primary" id="copyPromptBtn">Copy to Clipboard</button>
             </div>
         </div>
     </section>

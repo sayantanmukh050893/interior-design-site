@@ -544,6 +544,112 @@ section {
 }
 
 /* ===================================
+   Team Section
+   =================================== */
+
+.team {
+    background: linear-gradient(135deg, #FAFAF8 0%, #F5F3F0 100%);
+    padding: 5rem 0;
+}
+
+.team-member {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    margin-top: 3rem;
+}
+
+.team-member-image {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.team-member-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.team-member-content h3 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.team-role {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.team-member-content p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+}
+
+.team-intro {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.expertise-section {
+    background: var(--bg-white);
+    padding: 2rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    margin: 2rem 0;
+}
+
+.expertise-section h4 {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+}
+
+.expertise-list {
+    list-style: none;
+}
+
+.expertise-list li {
+    padding: 0.6rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.expertise-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.team-cta {
+    background: var(--bg-white);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.team-cta p {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ===================================
    Gallery Section
    =================================== */
 
@@ -1335,6 +1441,19 @@ section {
     .btn {
         width: 100%;
         text-align: center;
+    }
+
+    .team-member {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .team-member-content h3 {
+        font-size: 1.8rem;
+    }
+
+    .expertise-section {
+        padding: 1.5rem;
     }
 }
 
